@@ -103,7 +103,7 @@ def go_next(full_df, page):
     return sliced, new_page, info
 
 
-def search_bugs(jira_url, email, credential, search_text, issue_type, max_results, parent, component, platform):
+def search_bugs(jira_url, email, credential, search_text, issue_type, parent, component, platform):
     empty = pd.DataFrame(columns=COLS)
     if not email.strip() or not credential.strip():
         return empty, "❌ Please enter your credentials.", "", empty, 0, ""
@@ -138,7 +138,7 @@ def search_bugs(jira_url, email, credential, search_text, issue_type, max_result
     jql = " AND ".join(conditions) + " ORDER BY created DESC"
 
     try:
-        issues = client.search_issues(jql, maxResults=int(max_results))
+        issues = client.search_issues(jql, maxResults=False)
     except JIRAError as e:
         return empty, f"❌ JQL Error: {e.text}", jql, empty, 0, ""
 
@@ -261,7 +261,6 @@ with gr.Blocks(title="JIRA Bug Search") as app:
                 choices=["Any", "Bug", "Task", "Story", "Epic", "Sub-task"],
                 value="Bug"
             )
-            max_results  = gr.Slider(label="Max results", minimum=5, maximum=50, value=10, step=5)
             with gr.Row():
                 parent_input    = gr.Textbox(label="Parent (optional)",    placeholder="e.g. NM-1234",  scale=1)
                 component_input = gr.Textbox(label="Component (optional)", placeholder="e.g. Frontend", scale=1)
@@ -290,7 +289,7 @@ with gr.Blocks(title="JIRA Bug Search") as app:
     save_btn.click(fn=save_credentials, inputs=[jira_url_input, email_input, token_input], outputs=[conn_status])
     clear_btn.click(fn=clear_credentials, outputs=[jira_url_input, email_input, token_input, conn_status])
 
-    _search_inputs  = [jira_url_input, email_input, token_input, search_input, issue_type, max_results, parent_input, component_input, platform_input]
+    _search_inputs  = [jira_url_input, email_input, token_input, search_input, issue_type, parent_input, component_input, platform_input]
     _search_outputs = [results_df, search_status, jql_box, all_results_state, page_state, page_info]
     search_btn.click(fn=search_bugs,   inputs=_search_inputs, outputs=_search_outputs)
     search_input.submit(fn=search_bugs, inputs=_search_inputs, outputs=_search_outputs)
